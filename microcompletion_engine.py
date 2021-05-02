@@ -517,8 +517,28 @@ def call_eight_to_vararg(state,keystroke):
             return state.delete_before_cursor(2).insert_text('**'+keystroke)
 
 
+
+@engine.add_rule 
+def if_else_inline(state,keystroke):
+    """
+    If/else on space
+    |    ‹x=y if¦›    space   ‹x=y if ¦ else›    y space    ‹x=y if y else ¦›
+    ...
+    |    ‹[x if¦]›    space   ‹[x if ¦ else]›    y space    ‹[x if y else ¦]›
+
+    If/else on backspace
+    |    ‹[x if y else ¦]›    backspace    ‹[x if ¦ else]›    backspace    ‹[x¦]›
+    """
+    #Todo: If we can detect that we're in a list comprehension, we can trigger this upon pressing 'f' (like we do in rp)
+    if keystroke==' ':
+        if state.current_line_before_cursor.endswith(' if') and state.current_line_before_cursor[-2:].strip():
+            return state.insert_text('  else').cursor_left(len(' else'))
+        if state.current_line_after_cursor.rstrip()==' else' or startswith_any(state.current_line_after_cursor,' else]',' else)',' else}',' else,',' else:',' else;',' else#'):
+            return state.cursor_right(len(' else')).insert_text(' ')
+
+
 @engine.add_rule
-def uncomma_and(state,keystroke):
+def uncomma_binary_keyword(state,keystroke):
     """
     This rule should come before space_to_function_arg
     |    ‹print(x,and¦)›    space   ‹print(x and ¦)›
@@ -527,14 +547,7 @@ def uncomma_and(state,keystroke):
         keywords='is and or if for'.split()
         for keyword in keywords:
             if state.current_line_before_cursor.endswith(','+keyword):
-                return state.delete_before_cursor(len(','+keyword)).insert_text(' '+keyword+' ')
-
-# @engine.add_rule 
-# def if_else_inline(state,keystroke):
-#     if keystroke==' ':
-#         if state.current_line_before_cursor.endswith(' if'):
-#             return state.insert_text('  else').cursor_left(len(' else'))
-    
+                return state.delete_before_cursor(len(','+keyword)).insert_text(' '+keyword+' ')    
 
 @engine.add_rule
 def space_to_function_arg(state,keystroke):
