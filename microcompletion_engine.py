@@ -411,6 +411,39 @@ def enter_new_block(state,keystroke):
         return state.cursor_end.insert_text('\n'+state.leading_whitespace_in_current_line+'    ')
 
 @engine.add_rule
+def enter_to_next_line(state,keystroke):
+    r"""
+    You don't always have to put your cursor to the end of the line before hitting the enter key.
+    |    ‹def f():›                          ‹def f():›      
+    |    ‹    print(x¦)›    enter            ‹    print(x)› 
+    |                                        ‹    ¦›
+
+    Notice how you can do the same thing while using the right arrow key:
+    |    ‹def f():›                          ‹def f():›      
+    |    ‹    print(x¦)›    enter   right    ‹    print(x)› 
+    |                                        ‹    ¦›
+
+    SHOULD_FAIL! This is what it would do without this completion:
+    |    ‹def f():›                   ‹def f():›      
+    |    ‹    print(x¦)›    enter     ‹    print(x› 
+    |                                 ‹¦)›
+
+    Integration test
+    |                            ‹print(x)›
+    |    p ␣ x ↵ p ␣ y ↵ p ␣ z   ‹print(y)›
+    |                            ‹print(z¦)›
+
+    Integration test: Should work on return, playing well with exit_block_on_enter
+    |    ‹def f():›                  ‹def f():›       
+    |    ‹    return g(¦)›   enter   ‹    return g()›
+    |                                ‹¦›
+
+    """
+    if keystroke=='\n' and state.current_line_after_cursor and set(state.current_line_after_cursor)<=set(')]}'):
+        return engine.process(state.cursor_end,'\n')
+
+
+@engine.add_rule
 def exit_block_on_enter(state,keystroke):
     r"""
     When pressing enter after the return keyword, exit the current block
@@ -480,32 +513,6 @@ def call_eight_to_vararg(state,keystroke):
             return state.delete_before_cursor( ).insert_text('*'+keystroke)
         if endswith_any(state.current_line_before_cursor,',88','(88'):
             return state.delete_before_cursor(2).insert_text('**'+keystroke)
-
-@engine.add_rule
-def enter_to_next_line(state,keystroke):
-    r"""
-    You don't always have to put your cursor to the end of the line before hitting the enter key.
-    |    ‹def f():›                          ‹def f():›      
-    |    ‹    print(x¦)›    enter            ‹    print(x)› 
-    |                                        ‹    ¦›
-
-    Notice how you can do the same thing while using the right arrow key:
-    |    ‹def f():›                          ‹def f():›      
-    |    ‹    print(x¦)›    enter   right    ‹    print(x)› 
-    |                                        ‹    ¦›
-
-    SHOULD_FAIL! This is what it would do without this completion:
-    |    ‹def f():›                   ‹def f():›      
-    |    ‹    print(x¦)›    enter     ‹    print(x› 
-    |                                 ‹¦)›
-
-    Integration test
-    |                            ‹print(x)›
-    |    p ␣ x ↵ p ␣ y ↵ p ␣ z   ‹print(y)›
-    |                            ‹print(z¦)›
-    """
-    if keystroke=='\n' and state.current_line_after_cursor and set(state.current_line_after_cursor)<=set(')]}'):
-        return engine.process(state.cursor_end,'\n')
 
 @engine.add_rule
 def space_to_function_arg(state,keystroke):
@@ -1211,7 +1218,7 @@ def integration_tests(state,keystroke):
     |   i ␣ n u m p y ␣ n p   ‹import numpy as np›
     ...
     |                                               ‹def g(x):›
-    |   d ␣ g ␣ x ↵ f ␣ y ␣ x ↵ i f ␣ y ↵ p ␣ y     ‹    for y in x:›
+    |   d ␣ g ␣ x ↵ f ␣ y ␣ x ↵ i ␣ y ↵ p ␣ y     ‹    for y in x:›
     |                                               ‹        if y:›
     |                                               ‹            print(y¦)›
     ...

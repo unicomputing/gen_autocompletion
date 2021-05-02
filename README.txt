@@ -61,6 +61,20 @@ keystroke_testing_translations={
 }
 
 
+The new microcompletion engine, though it might not be as useful as the current rp's microcompletion engine (rp's has had a lot more time to mature), has many advantages. Notably, I was able to program most of these completion rules in less than 2 days after I finished the test suite, which is **much** less time than it took for me to do the equivalent work on rp. 
+Secondly, the new completion engine's functional nature makes it possible to perform recursion on the completion rules, which means less duplicate code. For example, the enter_to_next_line rule is able to call preserve_indent through recursively calling engine.process, which means that the logic for keeping the indent under the cursor when inserting a new line does not have to be duplicated for that rule. This is as opposed to rp's old completion engine, which would have to duplicate that logic because completions cannot be called recursively.
+    (reminder on what that rule does:)
 
+    Note how when we press enter, there are still 4 spaces before the cursor (as opposed to naively inserting a \n character, which would mean an indent of 0). This is because preserve_indent is triggered
+    |    ‹def f():›                          ‹def f():›      
+    |    ‹    print(x¦)›    enter            ‹    print(x)› 
+    |                                        ‹    ¦›
 
+    Note how there is a second behaviour, where pressing enter brings the cursor to column 0 because of the return. This is because exit_block_on_enter is triggered
+    |    ‹def f():›                  ‹def f():›       
+    |    ‹    return g(¦)›   enter   ‹    return g()›
+    |                                ‹¦›
+
+    Both of these cases are handled in a single line - the completion is "return engine.process(state.cursor_end,'\n')"
+    This is elegant, because return engine.process(state.cursor_end,'\n') can call other completion rules, such as exit_block_on_enter and preserve_indent, depending on the context. The logic for what happens doesn't have to all be hard-coded into enter_to_next_line, and can instead be delegated to other rules - resulting in less duplicate logic.
 
