@@ -516,6 +516,26 @@ def call_eight_to_vararg(state,keystroke):
         if endswith_any(state.current_line_before_cursor,',88','(88'):
             return state.delete_before_cursor(2).insert_text('**'+keystroke)
 
+
+@engine.add_rule
+def uncomma_and(state,keystroke):
+    """
+    This rule should come before space_to_function_arg
+    |    ‹print(x,and¦)›    space   ‹print(x and ¦)›
+    """
+    if keystroke==' ':
+        keywords='is and or if for'.split()
+        for keyword in keywords:
+            if state.current_line_before_cursor.endswith(','+keyword):
+                return state.delete_before_cursor(len(','+keyword)).insert_text(' '+keyword+' ')
+
+# @engine.add_rule 
+# def if_else_inline(state,keystroke):
+#     if keystroke==' ':
+#         if state.current_line_before_cursor.endswith(' if'):
+#             return state.insert_text('  else').cursor_left(len(' else'))
+    
+
 @engine.add_rule
 def space_to_function_arg(state,keystroke):
     r"""
@@ -1024,7 +1044,6 @@ def space_to_keyword(state,keystroke):
             if full_words[prefix].endswith(' :'):
                 state=state.cursor_left()
             return state
-
 
 @engine.add_rule
 def space_enter_to_keyword_colon(state,keystroke):
