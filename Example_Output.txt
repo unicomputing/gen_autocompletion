@@ -1,0 +1,1312 @@
+Running Tests
+
+RULE #0: def_to_args
+
+	Jumps to argument area
+	|   ‹def f¦():›   ␣   ‹def f(¦):›
+		Used Rule: def_to_args                   ‹def f(¦):›
+  	GOOD: PASSED
+
+	Also works on indented def's
+	|   ‹    def f¦():›   ␣   ‹    def f(¦):›
+		Used Rule: def_to_args                   ‹    def f(¦):›
+  	GOOD: PASSED
+
+RULE #1: def_enter
+
+	Gets rid of comma
+	|   ‹def f(x,¦):›   enter   ‹def f(x):›
+	|                           ‹    ¦›
+		Used Rule: def_enter                     ‹def f(x):↵    ¦›
+  	GOOD: PASSED
+
+	Works with no trailing comma too
+	|   ‹def f(x¦):›    enter    ‹def f(x):›
+	|                            ‹    ¦›
+		Used Rule: def_enter                     ‹def f(x):↵    ¦›
+  	GOOD: PASSED
+
+	Works with functions with no args too
+	|   ‹def f¦():›    enter    ‹def f():›
+	|                           ‹    ¦›
+		Used Rule: def_enter                     ‹def f():↵    ¦›
+  	GOOD: PASSED
+
+	Indents nested functions properly
+	|   ‹def f():›                 ‹def f():›
+	|   ‹    def g¦():›    enter   ‹    def g():›
+	|                              ‹        ¦›
+		Used Rule: def_enter                     ‹def f():↵    def g():↵        ¦›
+  	GOOD: PASSED
+
+	Integration test: Nested funcitons
+	|                              ‹def f():›
+	|   d ␣ f enter d ␣ g enter    ‹    def g():›
+	|                              ‹        ¦›
+		Used Rule: insert_character              ‹d¦›
+		Used Rule: d_to_def                      ‹def ¦():›
+		Used Rule: insert_character              ‹def f¦():›
+		Used Rule: def_enter                     ‹def f():↵    ¦›
+		Used Rule: insert_character              ‹def f():↵    d¦›
+		Used Rule: d_to_def                      ‹def f():↵    def ¦():›
+		Used Rule: insert_character              ‹def f():↵    def g¦():›
+		Used Rule: def_enter                     ‹def f():↵    def g():↵        ¦›
+  	GOOD: PASSED
+
+	Spacebar: Gets rid of comma, only works with comma
+	|   ‹def f(x,¦):›   space   ‹def f(x):¦›
+		Used Rule: def_enter                     ‹def f(x):¦›
+  	GOOD: PASSED
+
+	Spacebar: If there are no arguments, immediately enters the func body
+	|   ‹def f(¦):›   space   ‹def f():¦›
+		Used Rule: def_enter                     ‹def f():¦›
+  	GOOD: PASSED
+
+	Add a default function name if none is given
+	|   ‹def ¦():›    enter    ‹def _():›
+	|                          ‹    ¦›
+		Used Rule: def_enter                     ‹def _():↵    ¦›
+  	GOOD: PASSED
+
+RULE #2: def_arg_commas
+
+	Adds commas between args
+	|   ‹def f(x¦):›   ␣   ‹def f(x,¦):›
+		Used Rule: def_arg_commas                ‹def f(x,¦):›
+  	GOOD: PASSED
+
+	Also works with classes for multi-inheritance
+	|   ‹class C(x¦):›   ␣   ‹class C(x,¦):›
+		Used Rule: def_arg_commas                ‹class C(x,¦):›
+  	GOOD: PASSED
+
+	Integration test
+	|   d ␣ f ␣ x ␣ y ␣ z  ‹def f(x,y,z¦):›
+		Used Rule: insert_character              ‹d¦›
+		Used Rule: d_to_def                      ‹def ¦():›
+		Used Rule: insert_character              ‹def f¦():›
+		Used Rule: def_to_args                   ‹def f(¦):›
+		Used Rule: insert_character              ‹def f(x¦):›
+		Used Rule: def_arg_commas                ‹def f(x,¦):›
+		Used Rule: insert_character              ‹def f(x,y¦):›
+		Used Rule: def_arg_commas                ‹def f(x,y,¦):›
+		Used Rule: insert_character              ‹def f(x,y,z¦):›
+  	GOOD: PASSED
+
+RULE #3: def_backspce
+
+	On backspace, delete the function name...
+	|   ‹def func(¦):›   backspace   ‹def fun¦():›
+		Used Rule: def_backspce                  ‹def fun¦():›
+  	GOOD: PASSED
+
+	When there's no function name and no function args, delete the function...
+	|   ‹def ¦():›    backspace    ‹›
+		Used Rule: def_backspce                  ‹¦›
+  	GOOD: PASSED
+
+	Integration test: Here's the intention...it's backspacing the action of the spacebar
+	|   d ␣   ‹def ¦():›  backspace  ‹›
+		Used Rule: insert_character              ‹d¦›
+		Used Rule: d_to_def                      ‹def ¦():›
+		Used Rule: def_backspce                  ‹¦›
+  	GOOD: PASSED
+
+RULE #4: def_type
+
+	Add the -> to a function when we put the cursor in the right place
+	|   ‹def func(¦):›   right   ‹def func()->¦:›
+		Used Rule: def_type                      ‹def func()->¦:›
+  	GOOD: PASSED
+	...
+	|   ‹def func():¦›   left    ‹def func()->¦:›
+		Used Rule: def_type                      ‹def func()->¦:›
+  	GOOD: PASSED
+
+	Take the -> away if we move the cursor away again
+	|   ‹def func()->¦:›   right       ‹def func():¦›
+		Used Rule: def_type                      ‹def func():¦›
+  	GOOD: PASSED
+	...
+	|   ‹def func()->¦:›   left        ‹def func(¦):›
+		Used Rule: def_type                      ‹def func(¦):›
+  	GOOD: PASSED
+	...
+	|   ‹def func()->¦:›   backspace   ‹def func(¦):›
+		Used Rule: def_type                      ‹def func(¦):›
+  	GOOD: PASSED
+
+RULE #5: space_to_function_call
+
+	Instead of pressing '(' to call a function, which you need the shift key for, you can use the spacebar
+	|    ‹def f():›                 ‹def f():›
+	|    ‹    print(x)›    space    ‹    print(x)›
+	|    ‹f¦›                       ‹f(¦)›
+		Used Rule: space_to_function_call        ‹def f():↵    print(x)↵f(¦)›
+  	GOOD: PASSED
+
+	SHOULD_FAIL! If the word before the cursor is not a function, this rule should not be triggered
+	|    ‹g¦›   space   ‹g(¦)›
+		Used Rule: space_to_keyword              ‹global ¦›
+  	GOOD: FAILED
+
+	SHOULD_FAIL! If we're declaring a function, we shouldn't treat it like a function call; def_to_args should take priority.
+	|    ‹def f():pass›             ‹def f():pass›
+	|    ‹def f¦():›       space    ‹def f¦():›
+		Used Rule: def_to_args                   ‹def f():pass↵def f(¦):›
+  	GOOD: FAILED
+
+RULE #6: d_to_def
+
+	Shortcut for creating a function definition
+	|   ‹d¦›   ␣   ‹def ¦():›
+		Used Rule: d_to_def                      ‹def ¦():›
+  	GOOD: PASSED
+
+	Works on indented lines too
+	|   ‹    d¦›   ␣   ‹    def ¦():›
+		Used Rule: d_to_def                      ‹    def ¦():›
+  	GOOD: PASSED
+
+	Full usage demo
+	|  d ␣ f ␣ x ␣ y ␣ z ↵    ‹def f(x,y,z):›
+	|                         ‹    ¦›
+		Used Rule: insert_character              ‹d¦›
+		Used Rule: d_to_def                      ‹def ¦():›
+		Used Rule: insert_character              ‹def f¦():›
+		Used Rule: def_to_args                   ‹def f(¦):›
+		Used Rule: insert_character              ‹def f(x¦):›
+		Used Rule: def_arg_commas                ‹def f(x,¦):›
+		Used Rule: insert_character              ‹def f(x,y¦):›
+		Used Rule: def_arg_commas                ‹def f(x,y,¦):›
+		Used Rule: insert_character              ‹def f(x,y,z¦):›
+		Used Rule: def_enter                     ‹def f(x,y,z):↵    ¦›
+  	GOOD: PASSED
+
+	Add a defualt function name with no args if we press enter
+	|   ‹d¦›   enter   ‹def _():›
+	|                  ‹    ¦›
+		Used Rule: d_to_def                      ‹def _():↵    ¦›
+  	GOOD: PASSED
+
+	SHOULD_FAIL! This shouldn't happen if d is a function, because space_to_function_call should take priority
+	|   ‹def d():pass›           ‹def d():pass›
+	|   ‹d¦›             space   ‹def ¦():›
+		Used Rule: space_to_function_call        ‹def d():pass↵d(¦)›
+  	GOOD: FAILED
+
+RULE #7: while_true
+
+	Default while loop
+	|   ‹w›  enter  ‹while True:›
+	|               ‹    ¦›
+		Used Rule: while_true                    ‹while True:↵    ¦›
+  	GOOD: PASSED
+	...
+	|   ‹while ¦:›  enter  ‹while True:›
+	|                      ‹    ¦›
+		Used Rule: while_true                    ‹while True:↵    ¦›
+  	GOOD: PASSED
+	...
+	|   ‹while True:¦›  backspace  ‹while ¦:›
+		Used Rule: while_true                    ‹while ¦:›
+  	GOOD: PASSED
+
+RULE #8: enter_new_block
+
+	When entering a new block of code , add an indent
+	|   ‹if True:¦›   enter   ‹if True:›
+	|                         ‹    ¦›
+		Used Rule: enter_new_block               ‹if True:↵    ¦›
+  	GOOD: PASSED
+	...
+	|   ‹def f(x):¦›    enter    ‹def f(x):›
+	|                            ‹    ¦›
+		Used Rule: def_enter                     ‹def f(x):↵    ¦›
+  	GOOD: PASSED
+	...
+	|   ‹for x in y:¦›   enter   ‹for x in y:›
+	|                            ‹    ¦›
+		Used Rule: enter_new_block               ‹for x in y:↵    ¦›
+  	GOOD: PASSED
+
+	Also works when the cursor is right before the :
+	|   ‹for x in y¦:›   enter   ‹for x in y:›
+	|                            ‹    ¦›
+		Used Rule: enter_new_block               ‹for x in y:↵    ¦›
+  	GOOD: PASSED
+
+RULE #9: exit_block_on_enter
+
+	When pressing enter after the return keyword, exit the current block
+	|   ‹def f(x):›        enter   ‹def f(x):›
+	|   ‹    return x¦›            ‹    return x›
+	|                              ‹¦›
+		Used Rule: exit_block_on_enter           ‹def f(x):↵    return x↵¦›
+  	GOOD: PASSED
+	...
+	|   ‹def f(x):›        enter   ‹def f(x):›
+	|   ‹    return¦›              ‹    return›
+	|                              ‹¦›
+		Used Rule: exit_block_on_enter           ‹def f(x):↵    return↵¦›
+  	GOOD: PASSED
+
+	Same with break and continue
+	|   ‹while f():›                ‹while f():›
+	|   ‹    break¦›      enter     ‹    break›
+	|                               ‹¦›
+		Used Rule: exit_block_on_enter           ‹while f():↵    break↵¦›
+  	GOOD: PASSED
+	...
+	|   ‹while f():›                ‹while f():›
+	|   ‹    continue¦›   enter     ‹    continue›
+	|                               ‹¦›
+		Used Rule: exit_block_on_enter           ‹while f():↵    continue↵¦›
+  	GOOD: PASSED
+
+RULE #10: def_eight_to_vararg
+
+	Saves you from having to press the shift key, because "def f(8):" is invalid syntax
+	|   ‹def f(¦):›     8   ‹def f(*¦):›
+		Used Rule: def_eight_to_vararg           ‹def f(*¦):›
+  	GOOD: PASSED
+	...
+	|   ‹def f(x,¦):›   8   ‹def f(x,*¦):›   8   ‹def f(x,**¦):›
+		Used Rule: def_eight_to_vararg           ‹def f(x,*¦):›
+		Used Rule: def_eight_to_vararg           ‹def f(x,**¦):›
+  	GOOD: PASSED
+
+	SHOULD_FAIL!
+	|   ‹def f(x¦):›    8   ‹def f(x*¦):›
+		Used Rule: insert_character              ‹def f(x8¦):›
+  	GOOD: FAILED
+	...
+	|   ‹def f(x=¦):›   8   ‹def f(x=*¦):›
+		Used Rule: insert_character              ‹def f(x=8¦):›
+  	GOOD: FAILED
+
+	Integration test
+	|   d ␣ f ␣ 8 a r g s    ‹def f(*args¦):›    ␣ 8 8 k w a r g s     ‹def f(*args,**kwargs¦):›
+		Used Rule: insert_character              ‹d¦›
+		Used Rule: d_to_def                      ‹def ¦():›
+		Used Rule: insert_character              ‹def f¦():›
+		Used Rule: def_to_args                   ‹def f(¦):›
+		Used Rule: def_eight_to_vararg           ‹def f(*¦):›
+		Used Rule: insert_character              ‹def f(*a¦):›
+		Used Rule: insert_character              ‹def f(*ar¦):›
+		Used Rule: insert_character              ‹def f(*arg¦):›
+		Used Rule: insert_character              ‹def f(*args¦):›
+		Used Rule: def_arg_commas                ‹def f(*args,¦):›
+		Used Rule: def_eight_to_vararg           ‹def f(*args,*¦):›
+		Used Rule: def_eight_to_vararg           ‹def f(*args,**¦):›
+		Used Rule: insert_character              ‹def f(*args,**k¦):›
+		Used Rule: insert_character              ‹def f(*args,**kw¦):›
+		Used Rule: insert_character              ‹def f(*args,**kwa¦):›
+		Used Rule: insert_character              ‹def f(*args,**kwar¦):›
+		Used Rule: insert_character              ‹def f(*args,**kwarg¦):›
+		Used Rule: insert_character              ‹def f(*args,**kwargs¦):›
+  	GOOD: PASSED
+
+RULE #11: call_eight_to_vararg
+
+	Saves you from having to press the shift during function calls
+	|   ‹print(x,¦)›     8 y     ‹print(x,*y¦)›
+		Used Rule: insert_character              ‹print(x,8¦)›
+		Used Rule: call_eight_to_vararg          ‹print(x,*y¦)›
+  	GOOD: PASSED
+	...
+	|   ‹print(¦)›       8 x     ‹print(*x¦)›
+		Used Rule: insert_character              ‹print(8¦)›
+		Used Rule: call_eight_to_vararg          ‹print(*x¦)›
+  	GOOD: PASSED
+	...
+	|   ‹print(x,¦)›     8 8 y     ‹print(x,**y¦)›
+		Used Rule: insert_character              ‹print(x,8¦)›
+		Used Rule: insert_character              ‹print(x,88¦)›
+		Used Rule: call_eight_to_vararg          ‹print(x,**y¦)›
+  	GOOD: PASSED
+	...
+	|   ‹print(¦)›       8 8 x     ‹print(**x¦)›
+		Used Rule: insert_character              ‹print(8¦)›
+		Used Rule: insert_character              ‹print(88¦)›
+		Used Rule: call_eight_to_vararg          ‹print(**x¦)›
+  	GOOD: PASSED
+
+	Here's how it works, step by step:
+	|   ‹print(x,¦)›     8     ‹print(x,8¦)›     y   ‹print(x,*y¦)›
+		Used Rule: insert_character              ‹print(x,8¦)›
+		Used Rule: call_eight_to_vararg          ‹print(x,*y¦)›
+  	GOOD: PASSED
+	...
+	|   ‹print(x,¦)›     8 8   ‹print(x,88¦)›    y   ‹print(x,**y¦)›
+		Used Rule: insert_character              ‹print(x,8¦)›
+		Used Rule: insert_character              ‹print(x,88¦)›
+		Used Rule: call_eight_to_vararg          ‹print(x,**y¦)›
+  	GOOD: PASSED
+
+RULE #12: enter_to_next_line
+
+	You don't always have to put your cursor to the end of the line before hitting the enter key.
+	|    ‹def f():›                          ‹def f():›
+	|    ‹    print(x¦)›    enter            ‹    print(x)›
+	|                                        ‹    ¦›
+		Used Rule: enter_to_next_line            ‹def f():↵    print(x)↵    ¦›
+  	GOOD: PASSED
+
+	Notice how you can do the same thing while using the right arrow key:
+	|    ‹def f():›                          ‹def f():›
+	|    ‹    print(x¦)›    enter   right    ‹    print(x)›
+	|                                        ‹    ¦›
+		Used Rule: enter_to_next_line            ‹def f():↵    print(x)↵    ¦›
+		Used Rule: cursor_right                  ‹def f():↵    print(x)↵    ¦›
+  	GOOD: PASSED
+
+	SHOULD_FAIL! This is what it would do without this completion:
+	|    ‹def f():›                   ‹def f():›
+	|    ‹    print(x¦)›    enter     ‹    print(x›
+	|                                 ‹¦)›
+		Used Rule: enter_to_next_line            ‹def f():↵    print(x)↵    ¦›
+  	GOOD: FAILED
+
+	Integration test
+	|                            ‹print(x)›
+	|    p ␣ x ↵ p ␣ y ↵ p ␣ z   ‹print(y)›
+	|                            ‹print(z¦)›
+		Used Rule: insert_character              ‹p¦›
+		Used Rule: p_to_print                    ‹print(¦)›
+		Used Rule: insert_character              ‹print(x¦)›
+		Used Rule: enter_to_next_line            ‹print(x)↵¦›
+		Used Rule: insert_character              ‹print(x)↵p¦›
+		Used Rule: p_to_print                    ‹print(x)↵print(¦)›
+		Used Rule: insert_character              ‹print(x)↵print(y¦)›
+		Used Rule: enter_to_next_line            ‹print(x)↵print(y)↵¦›
+		Used Rule: insert_character              ‹print(x)↵print(y)↵p¦›
+		Used Rule: p_to_print                    ‹print(x)↵print(y)↵print(¦)›
+		Used Rule: insert_character              ‹print(x)↵print(y)↵print(z¦)›
+  	GOOD: PASSED
+
+RULE #13: space_to_function_arg
+
+	You can use the spacebar instead of the comma key
+	|    ‹max(¦)›   ␣   ‹max ¦›
+		Used Rule: space_to_function_arg         ‹max ¦›
+  	GOOD: PASSED
+	...
+	|    ‹max(x¦)›   ␣   ‹max(x,¦)›
+		Used Rule: space_to_function_arg         ‹max(x,¦)›
+  	GOOD: PASSED
+	...
+	|    ‹max(x,¦)›   ␣   ‹max(x)¦›
+		Used Rule: space_to_function_arg         ‹max(x)¦›
+  	GOOD: PASSED
+	...
+	|    ‹max(x,min¦)›   ␣   ‹max(x,min(¦))›
+		Used Rule: space_to_function_call        ‹max(x,min(¦))›
+  	GOOD: PASSED
+	...
+	|    ‹map(int¦)›   ␣   ‹map(int(¦))›   ␣   ‹map(int,¦)›
+		Used Rule: space_to_function_call        ‹map(int(¦))›
+		Used Rule: space_to_function_arg         ‹map(int,¦)›
+  	GOOD: PASSED
+	...
+	|    ‹zip(map(x,y¦))›   ␣   ‹zip(map(x,y,¦))›   ␣   ‹zip(map(x,y),¦)›  z ␣   ‹zip(map(x,y),z,¦)›  ␣  ‹zip(map(x,y),z)¦›
+		Used Rule: space_to_function_arg         ‹zip(map(x,y,¦))›
+		Used Rule: space_to_function_arg         ‹zip(map(x,y),¦)›
+		Used Rule: insert_character              ‹zip(map(x,y),z¦)›
+		Used Rule: space_to_function_arg         ‹zip(map(x,y),z,¦)›
+		Used Rule: space_to_function_arg         ‹zip(map(x,y),z)¦›
+  	GOOD: PASSED
+
+	Integration test
+	|    ‹def f():pass›                                  ‹def f():pass›
+	|    ‹¦›               f ␣ f ␣ a ␣ b ␣ ␣ f ␣ c ␣ d   ‹f(f(a,b),f(c,d¦))›
+		Used Rule: insert_character              ‹def f():pass↵f¦›
+		Used Rule: space_to_function_call        ‹def f():pass↵f(¦)›
+		Used Rule: insert_character              ‹def f():pass↵f(f¦)›
+		Used Rule: space_to_function_call        ‹def f():pass↵f(f(¦))›
+		Used Rule: insert_character              ‹def f():pass↵f(f(a¦))›
+		Used Rule: space_to_function_arg         ‹def f():pass↵f(f(a,¦))›
+		Used Rule: insert_character              ‹def f():pass↵f(f(a,b¦))›
+		Used Rule: space_to_function_arg         ‹def f():pass↵f(f(a,b,¦))›
+		Used Rule: space_to_function_arg         ‹def f():pass↵f(f(a,b),¦)›
+		Used Rule: insert_character              ‹def f():pass↵f(f(a,b),f¦)›
+		Used Rule: space_to_function_call        ‹def f():pass↵f(f(a,b),f(¦))›
+		Used Rule: insert_character              ‹def f():pass↵f(f(a,b),f(c¦))›
+		Used Rule: space_to_function_arg         ‹def f():pass↵f(f(a,b),f(c,¦))›
+		Used Rule: insert_character              ‹def f():pass↵f(f(a,b),f(c,d¦))›
+  	GOOD: PASSED
+
+RULE #14: add_matching_bracket
+
+	Inserting [ also inserts ]
+	|   ‹¦›   [   ‹[¦]›   [    ‹[[¦]]›
+		Used Rule: add_matching_bracket          ‹[¦]›
+		Used Rule: add_matching_bracket          ‹[[¦]]›
+  	GOOD: PASSED
+
+	Inserting ( also inserts )
+	|   ‹¦›   (   ‹(¦)›   (    ‹((¦))›
+		Used Rule: add_matching_bracket          ‹(¦)›
+		Used Rule: add_matching_bracket          ‹((¦))›
+  	GOOD: PASSED
+
+	Inserting { also inserts }
+	|   ‹¦›   {   ‹{¦}›   {    ‹{{¦}}›
+		Used Rule: add_matching_bracket          ‹{¦}›
+		Used Rule: add_matching_bracket          ‹{{¦}}›
+  	GOOD: PASSED
+
+RULE #15: backspace_matching_bracket
+
+	Backspacing [ also deletes ]
+	|   ‹[[¦]]›   backspace   ‹[¦]›  backspace   ‹¦›
+		Used Rule: backspace_matching_bracket    ‹[¦]›
+		Used Rule: backspace_matching_bracket    ‹¦›
+  	GOOD: PASSED
+
+	Backspacing ( also deletes )
+	|   ‹((¦))›   backspace   ‹(¦)›  backspace   ‹¦›
+		Used Rule: backspace_matching_bracket    ‹(¦)›
+		Used Rule: backspace_matching_bracket    ‹¦›
+  	GOOD: PASSED
+
+	Backspacing { also deletes }
+	|   ‹{{¦}}›   backspace   ‹{¦}›  backspace   ‹¦›
+		Used Rule: backspace_matching_bracket    ‹{¦}›
+		Used Rule: backspace_matching_bracket    ‹¦›
+  	GOOD: PASSED
+
+RULE #16: backspace_through_bracket
+
+	Backspacing through brackets can be faster than just backspacing the bracket because of backspace_matching_bracket
+	|    ‹f(x)¦›   backspace  ‹f(¦)›
+		Used Rule: backspace_through_bracket     ‹f(¦)›
+  	GOOD: PASSED
+	...
+	|    ‹f((x))¦›   backspace  ‹f((¦))›
+		Used Rule: backspace_through_bracket     ‹f((¦))›
+  	GOOD: PASSED
+
+	Integration test with backspace_matching_bracket
+	|    ‹[[1],[2]]¦›   ⌫   ‹[[1],[¦]]›   ⌫ ⌫  ‹[[1]¦]›  ⌫   ‹[[¦]]›   ⌫   ‹[¦]›   ⌫   ‹¦›
+		Used Rule: backspace_through_bracket     ‹[[1],[¦]]›
+		Used Rule: backspace_matching_bracket    ‹[[1],¦]›
+		Used Rule: backspace                     ‹[[1]¦]›
+		Used Rule: backspace_through_bracket     ‹[[¦]]›
+		Used Rule: backspace_matching_bracket    ‹[¦]›
+		Used Rule: backspace_matching_bracket    ‹¦›
+  	GOOD: PASSED
+
+RULE #17: increment_decrement
+
+	Adds the ++ and -- operators to python
+	|   ‹x›   + +   ‹x+=1›
+		Used Rule: insert_character              ‹x+¦›
+		Used Rule: increment_decrement           ‹x+=1¦›
+  	GOOD: PASSED
+	...
+	|   ‹x›   - -   ‹x-=1›
+		Used Rule: insert_character              ‹x-¦›
+		Used Rule: increment_decrement           ‹x-=1¦›
+  	GOOD: PASSED
+
+	Works with array_augmented_assignment
+	|   ‹a[x¦]›   + +   ‹a[x]+=1¦›
+		Used Rule: insert_character              ‹a[x+¦]›
+		Used Rule: increment_decrement           ‹a[x]+=1¦›
+  	GOOD: PASSED
+
+	Integration test
+	|   a [ ; - -   ‹a[:]-=1›
+		Used Rule: insert_character              ‹a¦›
+		Used Rule: add_matching_bracket          ‹a[¦]›
+		Used Rule: semicolon_to_colon_slices     ‹a[:¦]›
+		Used Rule: insert_character              ‹a[:-¦]›
+		Used Rule: increment_decrement           ‹a[:]-=1¦›
+  	GOOD: PASSED
+
+RULE #18: spaces_not_tabs
+
+	Tab adds four spaces
+	|   ‹›   tab   ‹    ›   tab   ‹        ›
+		Used Rule: spaces_not_tabs               ‹    ¦›
+		Used Rule: spaces_not_tabs               ‹        ¦›
+  	GOOD: PASSED
+
+	SHOULD_FAIL! Tab does not add a tab character
+	|   ‹›   tab   ‹\t›
+		Used Rule: spaces_not_tabs               ‹    ¦›
+  	GOOD: FAILED
+
+RULE #19: f_to_for_loop
+
+	Upon pressing space
+	|    ‹fo›   space   ‹for ¦ in :›   x ␣ y  ‹for x in y¦:›
+		Used Rule: f_to_for_loop                 ‹for ¦ in :›
+		Used Rule: insert_character              ‹for x¦ in :›
+		Used Rule: f_to_for_loop                 ‹for x in ¦:›
+		Used Rule: insert_character              ‹for x in y¦:›
+  	GOOD: PASSED
+	...
+	|    ‹f›    space   ‹for ¦ in :›
+		Used Rule: f_to_for_loop                 ‹for ¦ in :›
+  	GOOD: PASSED
+	...
+	|    ‹for›  space   ‹for ¦ in :›
+		Used Rule: f_to_for_loop                 ‹for ¦ in :›
+  	GOOD: PASSED
+
+	Backspacing for loops
+	|    ‹for ¦ in :›   backspace   ‹›
+		Used Rule: f_to_for_loop                 ‹¦›
+  	GOOD: PASSED
+	...
+	|    ‹for x in ¦:›   backspace   ‹for x¦ in :›
+		Used Rule: f_to_for_loop                 ‹for x¦ in :›
+  	GOOD: PASSED
+
+RULE #20: p_to_print
+
+	Upon pressing space, 'p' turns into print (assuming variable p doesn't exist)
+	|    ‹p›  space  ‹print(¦)›
+		Used Rule: p_to_print                    ‹print(¦)›
+  	GOOD: PASSED
+
+RULE #21: import_as
+
+	Upon pressing space when doing imports, try to do "import x as y"
+	|    ‹import thing›  space  ‹import thing as ›
+		Used Rule: import_as                     ‹import thing as ¦›
+  	GOOD: PASSED
+
+	Integration test
+	|    i ␣ n u m p y ␣ n p ‹import numpy as np›
+		Used Rule: insert_character              ‹i¦›
+		Used Rule: i_to_import                   ‹import ¦›
+		Used Rule: insert_character              ‹import n¦›
+		Used Rule: insert_character              ‹import nu¦›
+		Used Rule: insert_character              ‹import num¦›
+		Used Rule: insert_character              ‹import nump¦›
+		Used Rule: insert_character              ‹import numpy¦›
+		Used Rule: import_as                     ‹import numpy as ¦›
+		Used Rule: insert_character              ‹import numpy as n¦›
+		Used Rule: insert_character              ‹import numpy as np¦›
+  	GOOD: PASSED
+
+	SHOULD_FAIL! Won't do anything if we haven't imported anything
+	|    ‹import ¦› space ‹import  as ¦›
+		Used Rule: insert_character              ‹import  ¦›
+  	GOOD: FAILED
+
+RULE #22: new_colon_block
+
+	Automatically adds the missing ':'
+	|    ‹if›      space  ‹if ¦:›
+		Used Rule: new_colon_block               ‹if ¦:›
+  	GOOD: PASSED
+	...
+	|    ‹while›   space  ‹while ¦:›
+		Used Rule: new_colon_block               ‹while ¦:›
+  	GOOD: PASSED
+	...
+	|    ‹elif›    space  ‹elif ¦:›
+		Used Rule: new_colon_block               ‹elif ¦:›
+  	GOOD: PASSED
+	...
+	|    ‹with›    space  ‹with ¦:›
+		Used Rule: new_colon_block               ‹with ¦:›
+  	GOOD: PASSED
+	...
+	|    ‹except›  space  ‹except ¦:›
+		Used Rule: new_colon_block               ‹except ¦:›
+  	GOOD: PASSED
+
+	Enters the block in-line upon pressing space
+	|    ‹if True ¦:›           space  ‹if True:¦›
+		Used Rule: new_colon_block               ‹if True:¦›
+  	GOOD: PASSED
+	...
+	|    ‹while True ¦:›        space  ‹while True:¦›
+		Used Rule: new_colon_block               ‹while True:¦›
+  	GOOD: PASSED
+	...
+	|    ‹elif True ¦:›         space  ‹elif True:¦›
+		Used Rule: new_colon_block               ‹elif True:¦›
+  	GOOD: PASSED
+	...
+	|    ‹with thingy ¦:›       space  ‹with thingy:¦›
+		Used Rule: new_colon_block               ‹with thingy:¦›
+  	GOOD: PASSED
+	...
+	|    ‹except Exception ¦:›  space  ‹except Exception:¦›
+		Used Rule: new_colon_block               ‹except Exception:¦›
+  	GOOD: PASSED
+
+	Backspace destroys the block header
+	|    ‹if ¦:›       backspace  ‹›
+		Used Rule: new_colon_block               ‹¦›
+  	GOOD: PASSED
+	...
+	|    ‹while ¦:›    backspace  ‹›
+		Used Rule: new_colon_block               ‹¦›
+  	GOOD: PASSED
+	...
+	|    ‹elif ¦:›     backspace  ‹›
+		Used Rule: new_colon_block               ‹¦›
+  	GOOD: PASSED
+	...
+	|    ‹with ¦:›     backspace  ‹›
+		Used Rule: new_colon_block               ‹¦›
+  	GOOD: PASSED
+	...
+	|    ‹except ¦:›   backspace  ‹›
+		Used Rule: new_colon_block               ‹¦›
+  	GOOD: PASSED
+
+RULE #23: dot_equals
+
+	The .= operator activates upon pressing =
+	|   ‹matrix.¦›   =  ‹matrix=matrix.¦›
+		Used Rule: dot_equals                    ‹matrix=matrix.¦›
+  	GOOD: PASSED
+
+	Integration test: The .= operator is good for numpy operations, for example
+	|   ‹matrix¦› . = a b s ( ‹matrix=matrix.abs(¦)›
+		Used Rule: insert_character              ‹matrix.¦›
+		Used Rule: dot_equals                    ‹matrix=matrix.¦›
+		Used Rule: insert_character              ‹matrix=matrix.a¦›
+		Used Rule: insert_character              ‹matrix=matrix.ab¦›
+		Used Rule: insert_character              ‹matrix=matrix.abs¦›
+		Used Rule: add_matching_bracket          ‹matrix=matrix.abs(¦)›
+  	GOOD: PASSED
+
+	SHOULD_FAIL! Index assignment and function calls are out of the scope of this rule
+	|   ‹a[b.¦]›   =   ‹a[b=a[b.¦]›
+		Used Rule: insert_character              ‹a[b.=¦]›
+  	GOOD: FAILED
+	...
+	|   ‹f(x.¦)›   =   ‹f(x=f(x.¦)›
+		Used Rule: insert_character              ‹f(x.=¦)›
+  	GOOD: FAILED
+
+	Whitespace after the variable is OK
+	|   ‹matrix.¦    ›   =   ‹matrix=matrix.¦    ›
+		Used Rule: dot_equals                    ‹matrix=matrix.¦    ›
+  	GOOD: PASSED
+
+	TODO: Allow comments in addition to whitespace, or anything after a semicolon - because these should be OK. With a better semantic understaning of python, a lot more can be done...
+
+	SHOULD_FAIL! ...but if there's anything on this line after the cursor, it should not trigger this rule...
+	|   ‹matrix.¦    thing›   =   ‹matrix=matrix.¦    thing›
+		Used Rule: insert_character              ‹matrix.=¦    thing›
+  	GOOD: FAILED
+
+RULE #24: semicolon_to_colon_slices
+
+	This rule saves you from having to reach for the shift key when specifying array slices...
+	|    ‹a[¦]›   ;  ‹a[:¦]›
+		Used Rule: semicolon_to_colon_slices     ‹a[:¦]›
+  	GOOD: PASSED
+
+	Integration test: Especially useful for numpy...
+	|    a [ ; , 1 * = 0    ‹a[:,1]*=0›
+		Used Rule: insert_character              ‹a¦›
+		Used Rule: add_matching_bracket          ‹a[¦]›
+		Used Rule: semicolon_to_colon_slices     ‹a[:¦]›
+		Used Rule: insert_character              ‹a[:,¦]›
+		Used Rule: insert_character              ‹a[:,1¦]›
+		Used Rule: insert_character              ‹a[:,1*¦]›
+		Used Rule: array_augmented_assignment    ‹a[:,1]*=¦›
+		Used Rule: insert_character              ‹a[:,1]*=0¦›
+  	GOOD: PASSED
+
+RULE #25: semicolon_arg_type
+
+	This rule saves you from having to reach for the shift key when specifying argument types in a function declaration...
+	|    ‹def f(x¦):›    ;   ‹def f(x:¦):›
+		Used Rule: semicolon_arg_type            ‹def f(x:¦):›
+  	GOOD: PASSED
+
+	Integration test
+	|    d ␣ f ␣ x ; i n t    ‹def f(x:int¦):›
+		Used Rule: insert_character              ‹d¦›
+		Used Rule: d_to_def                      ‹def ¦():›
+		Used Rule: insert_character              ‹def f¦():›
+		Used Rule: def_to_args                   ‹def f(¦):›
+		Used Rule: insert_character              ‹def f(x¦):›
+		Used Rule: semicolon_arg_type            ‹def f(x:¦):›
+		Used Rule: insert_character              ‹def f(x:i¦):›
+		Used Rule: insert_character              ‹def f(x:in¦):›
+		Used Rule: insert_character              ‹def f(x:int¦):›
+  	GOOD: PASSED
+
+RULE #26: array_assignment
+
+	Easy setting index-values
+	|    ‹array[i¦]›  = x  ‹array[i]=x¦›
+		Used Rule: insert_character              ‹array[i=¦]›
+		Used Rule: array_assignment              ‹array[i]=x¦›
+  	GOOD: PASSED
+
+	What happens, step by step...
+	|    ‹array[i¦]›  =  ‹array[i=¦]›  x  ‹array[i]=x¦›
+		Used Rule: insert_character              ‹array[i=¦]›
+		Used Rule: array_assignment              ‹array[i]=x¦›
+  	GOOD: PASSED
+
+	SHOULD_FAIL! This shouldn't happen if we're using == or != as the index
+	|    ‹array[i==¦]›  x  ‹array[i=]=x¦›
+		Used Rule: insert_character              ‹array[i==x¦]›
+  	GOOD: FAILED
+	...
+	|    ‹array[i!=¦]›  x  ‹array[i!]=x¦›
+		Used Rule: insert_character              ‹array[i!=x¦]›
+  	GOOD: FAILED
+
+	Instead, this should happen...
+	|    ‹array[i==¦]›  x  ‹array[i==x¦]›
+		Used Rule: insert_character              ‹array[i==x¦]›
+  	GOOD: PASSED
+	...
+	|    ‹array[i!=¦]›  x  ‹array[i!=x¦]›
+		Used Rule: insert_character              ‹array[i!=x¦]›
+  	GOOD: PASSED
+
+	Nevertheless, this should still be possible...
+	|    ‹array[a==b=¦]›  c  ‹array[a==b]=c¦›
+		Used Rule: array_assignment              ‹array[a==b]=c¦›
+  	GOOD: PASSED
+
+	SHOULD_FAIL! This rule should not handle the dot_equals functionality - that's done in another rule
+	|    ‹a[i.=¦]›   x   ‹a[i.]=x¦›
+		Used Rule: array_assignment_dot_equals   ‹a[i]=a[i].x¦›
+  	GOOD: FAILED
+
+	Integration test
+	|    a [ i = x   ‹a[i]=x›
+		Used Rule: insert_character              ‹a¦›
+		Used Rule: add_matching_bracket          ‹a[¦]›
+		Used Rule: insert_character              ‹a[i¦]›
+		Used Rule: insert_character              ‹a[i=¦]›
+		Used Rule: array_assignment              ‹a[i]=x¦›
+  	GOOD: PASSED
+
+RULE #27: array_augmented_assignment
+
+	Similar to array_assignment, except it handles +=, -=, @=, *=, &=, ^=, %=, /=, etc
+	|    ‹array[i¦]› + =  ‹array[i]+=¦›
+		Used Rule: insert_character              ‹array[i+¦]›
+		Used Rule: array_augmented_assignment    ‹array[i]+=¦›
+  	GOOD: PASSED
+
+	Works with -=, *=, %=, etc
+	|    ‹array[i-¦]›  =  ‹array[i]-=¦›
+		Used Rule: array_augmented_assignment    ‹array[i]-=¦›
+  	GOOD: PASSED
+	...
+	|    ‹array[i*¦]›  =  ‹array[i]*=¦›
+		Used Rule: array_augmented_assignment    ‹array[i]*=¦›
+  	GOOD: PASSED
+	...
+	|    ‹array[i%¦]›  =  ‹array[i]%=¦›
+		Used Rule: array_augmented_assignment    ‹array[i]%=¦›
+  	GOOD: PASSED
+
+	Also works with function calls, since += corresponds to the __iadd__ function, which can mutate objects like numpy arrays...
+	|    ‹f(x¦)› + =  ‹f(x)+=¦›
+		Used Rule: insert_character              ‹f(x+¦)›
+		Used Rule: array_augmented_assignment    ‹f(x)+=¦›
+  	GOOD: PASSED
+
+	Integration test...note how we never needed to press the arrow keys to do any of this
+	|    f ( x - = y   ‹f(x)-=y›
+		Used Rule: insert_character              ‹f¦›
+		Used Rule: add_matching_bracket          ‹f(¦)›
+		Used Rule: insert_character              ‹f(x¦)›
+		Used Rule: insert_character              ‹f(x-¦)›
+		Used Rule: array_augmented_assignment    ‹f(x)-=¦›
+		Used Rule: insert_character              ‹f(x)-=y¦›
+  	GOOD: PASSED
+
+	Integration test...an application for numpy arrays
+	|    a [ : 2 - = 1   ‹a[:2]-=1›
+		Used Rule: insert_character              ‹a¦›
+		Used Rule: add_matching_bracket          ‹a[¦]›
+		Used Rule: insert_character              ‹a[:¦]›
+		Used Rule: insert_character              ‹a[:2¦]›
+		Used Rule: insert_character              ‹a[:2-¦]›
+		Used Rule: array_augmented_assignment    ‹a[:2]-=¦›
+		Used Rule: insert_character              ‹a[:2]-=1¦›
+  	GOOD: PASSED
+
+RULE #28: array_assignment_dot_equals
+
+	This rule is a natural combination of the array_assignment and dot_equals rules
+	|    ‹array[i¦]›  . = x  ‹array[i]=array[i].x¦›
+		Used Rule: insert_character              ‹array[i.¦]›
+		Used Rule: insert_character              ‹array[i.=¦]›
+		Used Rule: array_assignment_dot_equals   ‹array[i]=array[i].x¦›
+  	GOOD: PASSED
+
+	Step by step...
+	|    ‹array[i¦]›  . =    ‹array[i.=¦]›  x  ‹array[i]=array[i].x¦›
+		Used Rule: insert_character              ‹array[i.¦]›
+		Used Rule: insert_character              ‹array[i.=¦]›
+		Used Rule: array_assignment_dot_equals   ‹array[i]=array[i].x¦›
+  	GOOD: PASSED
+
+RULE #29: f_to_for_in_if
+
+	List and set comprehensions
+	|    ‹[x ¦]›   f   ‹[x for ¦ in]›   x ␣ y   ‹[x for x in y¦]›   ␣ i f x  ‹[x for x in y if x¦]›
+		Used Rule: f_to_for_in_if                ‹[x for ¦ in]›
+		Used Rule: insert_character              ‹[x for x¦ in]›
+		Used Rule: f_to_for_in_if                ‹[x for x in ¦]›
+		Used Rule: insert_character              ‹[x for x in y¦]›
+		Used Rule: insert_character              ‹[x for x in y ¦]›
+		Used Rule: insert_character              ‹[x for x in y i¦]›
+		Used Rule: f_to_for_in_if                ‹[x for x in y if ¦]›
+		Used Rule: insert_character              ‹[x for x in y if x¦]›
+  	GOOD: PASSED
+	...
+	|    ‹{x ¦}›   f   ‹{x for ¦ in}›   x ␣ y   ‹{x for x in y¦}›   ␣ i f x  ‹{x for x in y if x¦}›
+		Used Rule: f_to_for_in_if                ‹{x for ¦ in}›
+		Used Rule: insert_character              ‹{x for x¦ in}›
+		Used Rule: f_to_for_in_if                ‹{x for x in ¦}›
+		Used Rule: insert_character              ‹{x for x in y¦}›
+		Used Rule: insert_character              ‹{x for x in y ¦}›
+		Used Rule: insert_character              ‹{x for x in y i¦}›
+		Used Rule: f_to_for_in_if                ‹{x for x in y if ¦}›
+		Used Rule: insert_character              ‹{x for x in y if x¦}›
+  	GOOD: PASSED
+
+	Backspacing the list comprehension
+	|    ‹[x for ¦ in]›          backspace   ‹[x¦]›
+		Used Rule: f_to_for_in_if                ‹[x¦]›
+  	GOOD: PASSED
+	...
+	|    ‹[x for x in ¦]›        backspace   ‹[x for x¦ in]›
+		Used Rule: f_to_for_in_if                ‹[x for x¦ in]›
+  	GOOD: PASSED
+	...
+	|    ‹[x for x in y if ¦]›   backspace   ‹[x for x in y¦]›
+		Used Rule: f_to_for_in_if                ‹[x for x in y¦]›
+  	GOOD: PASSED
+
+RULE #32: backspace_keyword_space
+
+	Backspacing a space after a keyword deletes the whole keyword in one stroke
+	|    ‹import ¦›  backspace  ‹›
+		Used Rule: backspace_keyword_space       ‹¦›
+  	GOOD: PASSED
+	...
+	|    ‹a=b and ¦› backspace ‹a=b ¦›
+		Used Rule: backspace_keyword_space       ‹a=b ¦›
+  	GOOD: PASSED
+	...
+	|    ‹a=b is ¦› backspace ‹a=b ¦›
+		Used Rule: backspace_keyword_space       ‹a=b ¦›
+  	GOOD: PASSED
+	...
+
+	‹def f():›                   ‹def f():›
+
+	‹    global ¦›  backspace    ‹    ¦›
+	...
+
+	‹def f():›                   ‹def f():›
+
+	‹    global ¦›  backspace    ‹    ¦›
+
+RULE #33: i_to_import
+
+	Upon pressing space, 'i' or 'im' turns into 'import '
+	|    ‹i›  space  ‹import ›
+		Used Rule: i_to_import                   ‹import ¦›
+  	GOOD: PASSED
+	...
+	|    ‹im›  space  ‹import ›
+		Used Rule: i_to_import                   ‹import ¦›
+  	GOOD: PASSED
+
+	SHOULD_FAIL! If the indent isn't 0, requires that we have at least 'im' (because i could also mean if, and people don't normally import in indented blocks)
+	|    ‹    i›  space  ‹    import ›
+		Used Rule: space_to_keyword              ‹    if ¦:›
+  	GOOD: FAILED
+
+RULE #34: space_to_keyword
+	...
+	|    ‹t¦›     space   ‹try:¦›
+		Used Rule: space_to_keyword              ‹try:¦›
+  	GOOD: PASSED
+	...
+	|    ‹a¦›     space   ‹assert ¦›
+		Used Rule: space_to_keyword              ‹assert ¦›
+  	GOOD: PASSED
+	...
+	|    ‹g¦›     space   ‹global ¦›
+		Used Rule: space_to_keyword              ‹global ¦›
+  	GOOD: PASSED
+	...
+	|    ‹n¦›     space   ‹nonlocal ¦›
+		Used Rule: space_to_keyword              ‹nonlocal ¦›
+  	GOOD: PASSED
+	...
+	|    ‹i¦›     space   ‹import ¦›
+		Used Rule: i_to_import                   ‹import ¦›
+  	GOOD: PASSED
+	...
+	|    ‹y¦›     space   ‹yield ¦›
+		Used Rule: space_to_keyword              ‹yield ¦›
+  	GOOD: PASSED
+	...
+	|    ‹w¦›     space   ‹while ¦:›
+		Used Rule: space_to_keyword              ‹while ¦:›
+  	GOOD: PASSED
+	...
+	|    ‹if¦›     space   ‹if ¦:›
+		Used Rule: new_colon_block               ‹if ¦:›
+  	GOOD: PASSED
+	...
+	|    ‹pa¦›    space   ‹pass¦›
+		Used Rule: space_to_keyword              ‹pass¦›
+  	GOOD: PASSED
+	...
+	|    ‹co¦›    space   ‹continue¦›
+		Used Rule: space_to_keyword              ‹continue¦›
+  	GOOD: PASSED
+	...
+	|    ‹while True:›          ‹while True:›
+	|    ‹    bre¦›     space   ‹    break¦›
+		Used Rule: space_to_keyword              ‹while True:↵    break¦›
+  	GOOD: PASSED
+	...
+	|    ‹tr¦›    space   ‹try:¦›
+		Used Rule: space_to_keyword              ‹try:¦›
+  	GOOD: PASSED
+	...
+	|    ‹try¦›   space   ‹try:¦›
+		Used Rule: space_to_keyword              ‹try:¦›
+  	GOOD: PASSED
+	...
+	|    ‹as¦›    space   ‹assert ¦›
+		Used Rule: space_to_keyword              ‹assert ¦›
+  	GOOD: PASSED
+	...
+	|    ‹del¦›    space   ‹del ¦›
+		Used Rule: space_to_keyword              ‹del ¦›
+  	GOOD: PASSED
+	...
+	|    ‹ra¦›    space   ‹raise ¦›
+		Used Rule: space_to_keyword              ‹raise ¦›
+  	GOOD: PASSED
+
+RULE #36: backspace_keyword_colon
+
+	Backspacing a keyword with just a colon deletes both
+	|    ‹if True:pass›               ‹if True:pass›
+	|    ‹else:¦›         backspace   ‹¦›
+		Used Rule: backspace_keyword_colon       ‹if True:pass↵¦›
+  	GOOD: PASSED
+	...
+	|    ‹try:¦›   backspace   ‹¦›
+		Used Rule: backspace_keyword_colon       ‹¦›
+  	GOOD: PASSED
+
+RULE #37: backspace_through_colon
+
+	Backspace outside the block header enters it, for faster deletion
+	|    ‹if condition:¦›           backspace  ‹if conditio¦:›
+		Used Rule: backspace_through_colon       ‹if conditio¦:›
+  	GOOD: PASSED
+	...
+	|    ‹while condition:¦›        backspace  ‹while conditio¦:›
+		Used Rule: backspace_through_colon       ‹while conditio¦:›
+  	GOOD: PASSED
+	...
+	|    ‹elif condition:¦›         backspace  ‹elif conditio¦:›
+		Used Rule: backspace_through_colon       ‹elif conditio¦:›
+  	GOOD: PASSED
+	...
+	|    ‹with thingy:¦›       backspace  ‹with thing¦:›
+		Used Rule: backspace_through_colon       ‹with thing¦:›
+  	GOOD: PASSED
+	...
+	|    ‹except Exception:¦›  backspace  ‹except Exceptio¦:›
+		Used Rule: backspace_through_colon       ‹except Exceptio¦:›
+  	GOOD: PASSED
+
+	For functions and other things with parenthesis
+	|    ‹def f():¦›  backspace  ‹def ¦():›
+		Used Rule: backspace_through_colon       ‹def ¦():›
+  	GOOD: PASSED
+	...
+	|    ‹if f(x):¦›  backspace  ‹if f(¦):›
+		Used Rule: backspace_through_colon       ‹if f(¦):›
+  	GOOD: PASSED
+
+RULE #42: preserve_indent
+
+	Hitting enter can preserve the indent
+	|   ‹def f():›               ‹def f():›
+	|   ‹    print()¦›   enter   ‹    print()›
+	|                            ‹    ¦›
+		Used Rule: preserve_indent               ‹def f():↵    print()↵    ¦›
+  	GOOD: PASSED
+
+	SHOULD_FAIL! Hitting enter doesn't simple go to the beginning of the line with this rule
+	|   ‹def f():›               ‹def f():›
+	|   ‹    print()¦›   enter   ‹    print()›
+	|                            ‹¦›
+		Used Rule: preserve_indent               ‹def f():↵    print()↵    ¦›
+  	GOOD: FAILED
+
+RULE #43: backspace
+
+	Pressing the delete key deletes the character before the cursor
+	|   ‹abc¦def›   backspace  ‹ab¦def›   backspace   ‹a¦def›  backspace  ‹¦def›
+		Used Rule: backspace                     ‹ab¦def›
+		Used Rule: backspace                     ‹a¦def›
+		Used Rule: backspace                     ‹¦def›
+  	GOOD: PASSED
+
+	Pressing the delete key deletes the character before the cursor
+	|   ‹abc¦def›   backspace  backspace ‹a¦def›
+		Used Rule: backspace                     ‹ab¦def›
+		Used Rule: backspace                     ‹a¦def›
+  	GOOD: PASSED
+
+	Deleting doesn't do anything when there are no characters before the cursor
+	|   ‹¦abc›   backspace   ‹¦abc›
+		Used Rule: backspace_whitespace          ‹¦abc›
+  	GOOD: PASSED
+
+RULE #44: delete
+
+	Pressing the delete key deletes the character after the cursor
+	|   ‹abc¦def›   delete   ‹abc¦ef›   delete   ‹abc¦f›  delete  ‹abc¦›
+		Used Rule: delete                        ‹abc¦ef›
+		Used Rule: delete                        ‹abc¦f›
+		Used Rule: delete                        ‹abc¦›
+  	GOOD: PASSED
+
+	Deleting doesn't do anything when there are no characters after the cursor
+	|   ‹abc¦›   delete   ‹abc¦›
+		Used Rule: delete                        ‹abc¦›
+  	GOOD: PASSED
+
+RULE #45: insert_character
+
+	Typing letters
+	|    H e l l o ␣ W o r l d ‹Hello World›
+		Used Rule: insert_character              ‹H¦›
+		Used Rule: insert_character              ‹He¦›
+		Used Rule: insert_character              ‹Hel¦›
+		Used Rule: insert_character              ‹Hell¦›
+		Used Rule: insert_character              ‹Hello¦›
+		Used Rule: insert_character              ‹Hello ¦›
+		Used Rule: insert_character              ‹Hello W¦›
+		Used Rule: insert_character              ‹Hello Wo¦›
+		Used Rule: insert_character              ‹Hello Wor¦›
+		Used Rule: insert_character              ‹Hello Worl¦›
+		Used Rule: insert_character              ‹Hello World¦›
+  	GOOD: PASSED
+
+RULE #46: integration_tests
+
+	This rule doesn't do actually anything, it's just here for testing purposes
+	...
+	|   d ␣ f ␣ x ␣ y ␣ z enter ‹def f(x,y,z):›
+	|                           ‹    ¦›
+		Used Rule: insert_character              ‹d¦›
+		Used Rule: d_to_def                      ‹def ¦():›
+		Used Rule: insert_character              ‹def f¦():›
+		Used Rule: def_to_args                   ‹def f(¦):›
+		Used Rule: insert_character              ‹def f(x¦):›
+		Used Rule: def_arg_commas                ‹def f(x,¦):›
+		Used Rule: insert_character              ‹def f(x,y¦):›
+		Used Rule: def_arg_commas                ‹def f(x,y,¦):›
+		Used Rule: insert_character              ‹def f(x,y,z¦):›
+		Used Rule: def_enter                     ‹def f(x,y,z):↵    ¦›
+  	GOOD: PASSED
+	...
+	|                                                             ‹def f(x:int)->int:›
+	|   d ␣ f ␣ x ; i n t right i n t enter x + + enter r ␣ x     ‹    x+=1›
+	|                                                             ‹    return x¦›
+		Used Rule: insert_character              ‹d¦›
+		Used Rule: d_to_def                      ‹def ¦():›
+		Used Rule: insert_character              ‹def f¦():›
+		Used Rule: def_to_args                   ‹def f(¦):›
+		Used Rule: insert_character              ‹def f(x¦):›
+		Used Rule: semicolon_arg_type            ‹def f(x:¦):›
+		Used Rule: insert_character              ‹def f(x:i¦):›
+		Used Rule: insert_character              ‹def f(x:in¦):›
+		Used Rule: insert_character              ‹def f(x:int¦):›
+		Used Rule: def_type                      ‹def f(x:int)->¦:›
+		Used Rule: insert_character              ‹def f(x:int)->i¦:›
+		Used Rule: insert_character              ‹def f(x:int)->in¦:›
+		Used Rule: insert_character              ‹def f(x:int)->int¦:›
+		Used Rule: def_enter                     ‹def f(x:int)->int:↵    ¦›
+		Used Rule: insert_character              ‹def f(x:int)->int:↵    x¦›
+		Used Rule: insert_character              ‹def f(x:int)->int:↵    x+¦›
+		Used Rule: increment_decrement           ‹def f(x:int)->int:↵    x+=1¦›
+		Used Rule: preserve_indent               ‹def f(x:int)->int:↵    x+=1↵    ¦›
+		Used Rule: insert_character              ‹def f(x:int)->int:↵    x+=1↵    r¦›
+		Used Rule: space_to_keyword              ‹def f(x:int)->int:↵    x+=1↵    return ¦›
+		Used Rule: insert_character              ‹def f(x:int)->int:↵    x+=1↵    return x¦›
+  	GOOD: PASSED
+	...
+	|   ‹def f(¦):›   right   ‹def f()->¦:›   right    ‹def f():¦›
+		Used Rule: def_type                      ‹def f()->¦:›
+		Used Rule: def_type                      ‹def f():¦›
+  	GOOD: PASSED
+	...
+	|                             ‹def _():›
+	|   d enter d enter d enter   ‹    def _():›
+	|                             ‹        def _():›
+	|                             ‹            ¦›
+		Used Rule: insert_character              ‹d¦›
+		Used Rule: d_to_def                      ‹def _():↵    ¦›
+		Used Rule: insert_character              ‹def _():↵    d¦›
+		Used Rule: d_to_def                      ‹def _():↵    def _():↵        ¦›
+		Used Rule: insert_character              ‹def _():↵    def _():↵        d¦›
+		Used Rule: d_to_def                      ‹def _():↵    def _():↵        def _():↵            ¦›
+  	GOOD: PASSED
+	...
+	|   x [ i + +     ‹x[i]+=1›
+		Used Rule: insert_character              ‹x¦›
+		Used Rule: add_matching_bracket          ‹x[¦]›
+		Used Rule: insert_character              ‹x[i¦]›
+		Used Rule: insert_character              ‹x[i+¦]›
+		Used Rule: increment_decrement           ‹x[i]+=1¦›
+  	GOOD: PASSED
+	...
+	|   x [ i = y     ‹x[i]=y›
+		Used Rule: insert_character              ‹x¦›
+		Used Rule: add_matching_bracket          ‹x[¦]›
+		Used Rule: insert_character              ‹x[i¦]›
+		Used Rule: insert_character              ‹x[i=¦]›
+		Used Rule: array_assignment              ‹x[i]=y¦›
+  	GOOD: PASSED
+	...
+	|   x . = y       ‹x=x.y›
+		Used Rule: insert_character              ‹x¦›
+		Used Rule: insert_character              ‹x.¦›
+		Used Rule: dot_equals                    ‹x=x.¦›
+		Used Rule: insert_character              ‹x=x.y¦›
+  	GOOD: PASSED
+	...
+	|   [ x ␣ f x ␣ y ␣ i f x    ‹[x for x in y if x¦]›
+		Used Rule: add_matching_bracket          ‹[¦]›
+		Used Rule: insert_character              ‹[x¦]›
+		Used Rule: insert_character              ‹[x ¦]›
+		Used Rule: f_to_for_in_if                ‹[x for ¦ in]›
+		Used Rule: insert_character              ‹[x for x¦ in]›
+		Used Rule: f_to_for_in_if                ‹[x for x in ¦]›
+		Used Rule: insert_character              ‹[x for x in y¦]›
+		Used Rule: insert_character              ‹[x for x in y ¦]›
+		Used Rule: insert_character              ‹[x for x in y i¦]›
+		Used Rule: f_to_for_in_if                ‹[x for x in y if ¦]›
+		Used Rule: insert_character              ‹[x for x in y if x¦]›
+  	GOOD: PASSED
+	...
+	|   i ␣ n u m p y ␣ n p   ‹import numpy as np›
+		Used Rule: insert_character              ‹i¦›
+		Used Rule: i_to_import                   ‹import ¦›
+		Used Rule: insert_character              ‹import n¦›
+		Used Rule: insert_character              ‹import nu¦›
+		Used Rule: insert_character              ‹import num¦›
+		Used Rule: insert_character              ‹import nump¦›
+		Used Rule: insert_character              ‹import numpy¦›
+		Used Rule: import_as                     ‹import numpy as ¦›
+		Used Rule: insert_character              ‹import numpy as n¦›
+		Used Rule: insert_character              ‹import numpy as np¦›
+  	GOOD: PASSED
+	...
+	|                                               ‹def g(x):›
+	|   d ␣ g ␣ x ↵ f ␣ y ␣ x ↵ i f ␣ y ↵ p ␣ y     ‹    for y in x:›
+	|                                               ‹        if y:›
+	|                                               ‹            print(y¦)›
+		Used Rule: insert_character              ‹d¦›
+		Used Rule: d_to_def                      ‹def ¦():›
+		Used Rule: insert_character              ‹def g¦():›
+		Used Rule: def_to_args                   ‹def g(¦):›
+		Used Rule: insert_character              ‹def g(x¦):›
+		Used Rule: def_enter                     ‹def g(x):↵    ¦›
+		Used Rule: insert_character              ‹def g(x):↵    f¦›
+		Used Rule: f_to_for_loop                 ‹def g(x):↵    for ¦ in :›
+		Used Rule: insert_character              ‹def g(x):↵    for y¦ in :›
+		Used Rule: f_to_for_loop                 ‹def g(x):↵    for y in ¦:›
+		Used Rule: insert_character              ‹def g(x):↵    for y in x¦:›
+		Used Rule: enter_new_block               ‹def g(x):↵    for y in x:↵        ¦›
+		Used Rule: insert_character              ‹def g(x):↵    for y in x:↵        i¦›
+		Used Rule: insert_character              ‹def g(x):↵    for y in x:↵        if¦›
+		Used Rule: new_colon_block               ‹def g(x):↵    for y in x:↵        if ¦:›
+		Used Rule: insert_character              ‹def g(x):↵    for y in x:↵        if y¦:›
+		Used Rule: enter_new_block               ‹def g(x):↵    for y in x:↵        if y:↵            ¦›
+		Used Rule: insert_character              ‹def g(x):↵    for y in x:↵        if y:↵            p¦›
+		Used Rule: p_to_print                    ‹def g(x):↵    for y in x:↵        if y:↵            print(¦)›
+		Used Rule: insert_character              ‹def g(x):↵    for y in x:↵        if y:↵            print(y¦)›
+  	GOOD: PASSED
+	...
+	|  ‹if x[7]:¦›   ⌫   ‹if x[¦]:›   ⌫   ‹if x¦:›   ⌫   ‹if ¦:›   ⌫   ‹¦›
+		Used Rule: backspace_through_colon       ‹if x[¦]:›
+		Used Rule: backspace_matching_bracket    ‹if x¦:›
+		Used Rule: backspace                     ‹if ¦:›
+		Used Rule: new_colon_block               ‹¦›
+  	GOOD: PASSED
+	...
+	|                                       ‹def f(x):›
+	|  d ␣ f ␣ x ↵ w ␣ x ↵ p ␣ x ↵ x - -    ‹    while x:›
+	|                                       ‹        print(x)›
+	|                                       ‹        x-=1¦›
+		Used Rule: insert_character              ‹d¦›
+		Used Rule: d_to_def                      ‹def ¦():›
+		Used Rule: insert_character              ‹def f¦():›
+		Used Rule: def_to_args                   ‹def f(¦):›
+		Used Rule: insert_character              ‹def f(x¦):›
+		Used Rule: def_enter                     ‹def f(x):↵    ¦›
+		Used Rule: insert_character              ‹def f(x):↵    w¦›
+		Used Rule: space_to_keyword              ‹def f(x):↵    while ¦:›
+		Used Rule: insert_character              ‹def f(x):↵    while x¦:›
+		Used Rule: enter_new_block               ‹def f(x):↵    while x:↵        ¦›
+		Used Rule: insert_character              ‹def f(x):↵    while x:↵        p¦›
+		Used Rule: p_to_print                    ‹def f(x):↵    while x:↵        print(¦)›
+		Used Rule: insert_character              ‹def f(x):↵    while x:↵        print(x¦)›
+		Used Rule: enter_to_next_line            ‹def f(x):↵    while x:↵        print(x)↵        ¦›
+		Used Rule: insert_character              ‹def f(x):↵    while x:↵        print(x)↵        x¦›
+		Used Rule: insert_character              ‹def f(x):↵    while x:↵        print(x)↵        x-¦›
+		Used Rule: increment_decrement           ‹def f(x):↵    while x:↵        print(x)↵        x-=1¦›
+  	GOOD: PASSED
+
+	BELOW: Behaviours that can be implemented in the future. Most of these probably fail right now. All of these things currently work in rp.
+
+	TODO: Get rid of the ->
+	|   ‹def f()->¦:›  enter   ‹def f():›
+	|                          ‹    ¦›
+		Used Rule: def_enter                     ‹def f()->:↵    ¦›
+  	BAD: FAILED
+
+	SHOULD_FAIL! TODO: Detect if we're in a string before applying rules
+	|   ‹'''›           ‹'''›
+	|   ‹d¦›     space  ‹def ¦():›
+	|   ‹'''›           ‹'''›
+		Used Rule: d_to_def                      ‹'''↵def ¦():↵'''›
+  	BAD: PASSED
+
+	SHOULD_FAIL! It's not really important whether this fails or not, because "return x++" is invalid syntax anyway, but then again so is "return x+=1"
+	|   ‹def f():›                ‹def f():›
+	|   ‹    return x+¦›    +     ‹    return x+=1¦›
+		Used Rule: increment_decrement           ‹def f():↵    return x+=1¦›
+  	BAD: PASSED
+
+	SHOULD_FAIL! It would be better if 'f' made 'if', because what it currently does is invalid syntax
+	|   ‹[x for x in y ¦]›    f    ‹[x for x in y for ¦ in]›
+		Used Rule: f_to_for_in_if                ‹[x for x in y for ¦ in]›
+  	BAD: PASSED
+
+	TODO: Make space_to_function_call and def_to_args play together more nicely
+	|   ‹def f(x=print¦):›    space    ‹def f(x=print(¦)):›
+		Used Rule: def_arg_commas                ‹def f(x=print,¦):›
+  	BAD: FAILED
