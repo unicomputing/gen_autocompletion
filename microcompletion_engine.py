@@ -108,8 +108,9 @@ def new_block(self)->bool:
 def get_callable_names(self)->set[str]:
     #Returns the set of all callables in the current namespace
     #Right now this is more of an educated guess than anything else, since we don't have access to the python runtime
+    import builtins
     output=set()
-    output|=set(__builtins__) #int, list, etc are all functions and classes
+    output|=set(dir(builtins)) #int, list, etc are all functions and classes
     output|={name[:-1] for name in re.findall(r'\w+[\(]',self.text)} #If anywhere in our code we treat some name like a function (for example, if "flibber()" is somewhere in our code), then we assume that flibber is a function
     return output
 
@@ -121,8 +122,9 @@ def python_tokens(self)->list:
 def namespace(self)->set[str]:
     #Returns the set of all names in the current namespace
     #Right now this is more of an educated guess than anything else, since we don't have access to the python runtime
+    import builtins
     output=set()
-    output|=set(__builtins__) #int, list, etc are all functions and classes
+    output|=set(dir(builtins)) #int, list, etc are all functions and classes
     output|=set(self.delete_before_cursor(len(self.get_word_before_cursor())).python_tokens)
     return output
 
@@ -1053,6 +1055,18 @@ def backspace_keyword_colon(state,keystroke):
     if keystroke=='backspace' and prefix in keywords:
         return state.delete_before_cursor(len(prefix))
 
+@engine.add_rule
+def unindent_on_enter(state,keystroke):
+    """
+    If on a blank line, unindent
+    |    ‹def f():›                  ‹def f():›    
+    |    ‹    if True:›    enter     ‹    if True:›
+    |    ‹        pass›              ‹        pass›
+    |    ‹        ¦›                 ‹    ¦›   
+    """
+    if keystroke=='\n' and state.current_line and not state.current_line.strip():
+        return engine.process(state,'shift_tab')
+
 
 
 
@@ -1228,7 +1242,14 @@ def integration_tests(state,keystroke):
     |  d ␣ f ␣ x ↵ w ␣ x ↵ p ␣ x ↵ x - -    ‹    while x:›
     |                                       ‹        print(x)›
     |                                       ‹        x-=1¦›
+    ...
+    |  l i s t ␣ m a p ␣ i n t ␣ ␣ x     ‹list(map(int,x¦))›
 
+    Fibbonacci
+    |                                                                     ‹def f(x):›
+    |  d ␣ f ␣ x ↵ i ␣ x < 2 ↵ r ␣ 1 ↵ r ␣ f ␣ x - 1 ␣ ␣ + f ␣ x - 2      ‹    if x<2:›
+    |                                                                     ‹        return 1›
+    |                                                                     ‹    return f(x-1)+f(x-2¦)›
 
     BELOW: Behaviours that can be implemented in the future. Most of these probably fail right now. All of these things currently work in rp.
 
