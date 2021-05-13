@@ -1,0 +1,68 @@
+def f(n):
+	for i in range(n):
+		print(i)
+
+def f n
+	for i range n
+		print i
+
+d f n
+	f i range n
+		p i
+
+sum([x for x in y])
+sum [x f x y
+
+def 
+def |():
+
+list(map(ord,'hello world'))
+list map ord  'hello world'
+
+
+
+a+=b 
+a=a+b
+
+
+a.=b
+a=a.b
+
+array=array.abs()
+array.=abs()
+
+
+cursor.=next
+cursor=cursor.next
+
+
+a[i=x
+a[i]=x
+
+i x a y
+	p x y
+
+if x and y:
+	print(x,y)
+
+
+array[;-1
+array[:-1]
+
+
+x++
+x+=1
+
+
+
+d f 
+
+
+    Fibbonacci
+    |                                                                     ‹def f(x):›
+    |  d ␣ f ␣ x ↵ i ␣ x < 2 ↵ r ␣ 1 ↵ r ␣ f ␣ x - 1 ␣ ␣ + f ␣ x - 2      ‹    if x<2:›
+    |                                                                     ‹        return 1›
+    |                                                                     ‹    return f(x-1)+f(x-2¦)›
+
+
+

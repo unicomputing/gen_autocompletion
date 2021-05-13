@@ -535,6 +535,8 @@ def if_else_inline(state,keystroke):
             return state.insert_text('  else').cursor_left(len(' else'))
         if state.current_line_after_cursor.rstrip()==' else' or startswith_any(state.current_line_after_cursor,' else]',' else)',' else}',' else,',' else:',' else;',' else#'):
             return state.cursor_right(len(' else')).insert_text(' ')
+    # if keystroke=='backspace':
+        
 
 
 @engine.add_rule
